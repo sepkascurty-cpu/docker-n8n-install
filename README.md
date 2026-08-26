@@ -1,7 +1,8 @@
 # 🚀 n8n Self-Hosted on Windows — Docker
 
-> **Run n8n locally on Windows using Docker Desktop + WSL 2.**
-> Cocok untuk belajar automation, membuat workflow AI, integrasi API, webhook, Google Sheets, WhatsApp, dan berbagai kebutuhan automation lainnya.
+> **Menjalankan n8n Community Edition secara lokal di Windows menggunakan Docker Desktop + WSL 2.**
+
+Setup ini dirancang untuk **development, learning, dan automation pribadi**. Data workflow disimpan menggunakan Docker Volume sehingga workflow tetap tersimpan meskipun komputer dimatikan atau container dihentikan.
 
 <p align="center">
 
@@ -17,112 +18,125 @@
 ## 📌 Daftar Isi
 
 * [Tentang](#-tentang)
+* [Fitur Setup](#-fitur-setup)
 * [Arsitektur](#-arsitektur)
 * [Persyaratan Sistem](#-persyaratan-sistem)
 * [Instalasi](#️-instalasi)
 
   * [1. Install WSL 2](#1-install-wsl-2)
   * [2. Install Docker Desktop](#2-install-docker-desktop)
-  * [3. Menjalankan n8n](#3-menjalankan-n8n)
+  * [3. Membuat Docker Volume](#3-membuat-docker-volume)
+  * [4. Menjalankan n8n](#4-menjalankan-n8n)
 * [Akses Dashboard](#-akses-dashboard)
 * [Persistent Storage](#-persistent-storage)
-* [Menjalankan Kembali](#-menjalankan-kembali)
-* [Perintah Docker Berguna](#-perintah-docker-berguna)
+* [Setelah Komputer Dimatikan](#-setelah-komputer-dimatikan)
+* [Perintah Docker](#-perintah-docker)
 * [Webhook & Akses Internet](#-webhook--akses-internet)
 * [Troubleshooting](#-troubleshooting)
 * [Catatan Keamanan](#️-catatan-keamanan)
+* [Quick Start](#-quick-start)
+* [Resources](#-resources)
 
 ---
 
-## 🧠 Tentang
+# 🧠 Tentang
 
-**n8n** adalah workflow automation platform yang memungkinkan kamu menghubungkan berbagai aplikasi, API, database, dan layanan menggunakan workflow visual.
+**n8n** adalah platform workflow automation yang memungkinkan kita menghubungkan berbagai aplikasi, API, database, dan layanan menggunakan workflow visual.
 
-Dengan setup ini, n8n berjalan secara:
+Dengan setup ini, n8n berjalan menggunakan:
 
-* 🖥️ **Lokal** di komputer Windows
-* 🐳 **Containerized** menggunakan Docker
-* 💾 **Persistent** menggunakan Docker Volume
-* 🔄 **Auto-restart** ketika Docker aktif kembali
-* 🌐 Dapat diperluas untuk kebutuhan webhook dan integrasi eksternal
+```text
+Windows
+   │
+   ├── WSL 2
+   │
+   └── Docker Desktop
+          │
+          └── n8n Container
+                 │
+                 └── Persistent Volume
+```
 
 Setup ini cocok untuk:
 
-```text
-AI Automation
-API Integration
-Google Sheets Automation
-Webhook
-WhatsApp Automation
-Database Workflow
-Business Automation
-Data Processing
-```
+* AI Automation
+* API Integration
+* Google Sheets Automation
+* Webhook
+* WhatsApp Automation
+* Database Workflow
+* Business Automation
+* Data Processing
+* Internal Tools
+* Learning & Experimentation
+
+---
+
+# ✨ Fitur Setup
+
+| Fitur                  | Status                                             |
+| ---------------------- | -------------------------------------------------- |
+| 🖥️ Windows Support    | ✅                                                  |
+| 🐳 Docker Container    | ✅                                                  |
+| 🐧 WSL 2 Backend       | ✅                                                  |
+| 💾 Persistent Storage  | ✅                                                  |
+| 🔄 Auto Restart        | ✅                                                  |
+| 🌐 Local Web Interface | ✅                                                  |
+| 🔗 Webhook             | ⚠️ Perlu konfigurasi tambahan untuk akses internet |
+| 🔐 Production Ready    | ⚠️ Perlu hardening tambahan                        |
 
 ---
 
 # 🏗️ Arsitektur
 
-Secara sederhana, environment yang digunakan:
+Berikut gambaran sederhana environment yang digunakan:
 
 ```text
-┌─────────────────────────────┐
-│          Windows            │
-│                             │
-│  ┌───────────────────────┐  │
-│  │        WSL 2          │  │
-│  │                       │  │
-│  │  ┌─────────────────┐  │  │
-│  │  │ Docker Desktop  │  │  │
-│  │  │                 │  │  │
-│  │  │ ┌─────────────┐ │  │  │
-│  │  │ │     n8n     │ │  │  │
-│  │  │ │  Port 5678  │ │  │  │
-│  │  │ └──────┬──────┘ │  │  │
-│  │  └─────────┼────────┘  │  │
-│  └────────────┼───────────┘  │
-│               │              │
-└───────────────┼──────────────┘
-                │
-         n8n_data Volume
-                │
-        Persistent Storage
-```
-
-### Alur akses
-
-```text
-Browser
-   │
-   ▼
-localhost:5678
-   │
-   ▼
-Docker
-   │
-   ▼
-n8n Container
-   │
-   ▼
-n8n Workflow
+┌─────────────────────────────────────────┐
+│                WINDOWS                  │
+│                                         │
+│  ┌───────────────────────────────────┐  │
+│  │              WSL 2                │  │
+│  │                                   │  │
+│  │  ┌─────────────────────────────┐  │  │
+│  │  │       Docker Desktop        │  │  │
+│  │  │                             │  │  │
+│  │  │   ┌─────────────────────┐   │  │  │
+│  │  │   │        n8n          │   │  │  │
+│  │  │   │      :5678          │   │  │  │
+│  │  │   └──────────┬──────────┘   │  │  │
+│  │  │              │              │  │  │
+│  │  │              ▼              │  │  │
+│  │  │         n8n_data            │  │  │
+│  │  │      Persistent Volume      │  │  │
+│  │  └─────────────────────────────┘  │  │
+│  └───────────────────────────────────┘  │
+│                                         │
+└───────────────────┬─────────────────────┘
+                    │
+                    ▼
+             localhost:5678
+                    │
+                    ▼
+                 Browser
 ```
 
 ---
 
 # 💻 Persyaratan Sistem
 
-Sebelum instalasi, pastikan komputer memenuhi kebutuhan berikut:
+Sebelum memulai instalasi, pastikan komputer memenuhi kebutuhan berikut:
 
-| Komponen       |    Minimum | Rekomendasi |
-| -------------- | ---------: | ----------: |
-| OS             | Windows 10 |  Windows 11 |
-| CPU            |     2 Core |     4 Core+ |
-| RAM            |       4 GB |       8 GB+ |
-| Storage        |     1–2 GB |       5 GB+ |
-| Virtualization |    Enabled |     Enabled |
-| Internet       |   Required |      Stable |
+| Komponen         |    Minimum | Rekomendasi |
+| ---------------- | ---------: | ----------: |
+| Operating System | Windows 10 |  Windows 11 |
+| CPU              |     2 Core |     4 Core+ |
+| RAM              |       4 GB |       8 GB+ |
+| Storage          |     1–2 GB |       5 GB+ |
+| Virtualization   |    Enabled |     Enabled |
+| Internet         |   Required |      Stable |
 
-> **Note:** Workflow yang kompleks, AI automation, database, atau banyak container akan membutuhkan resource lebih besar.
+> **Note:** Jika workflow menggunakan AI, banyak node, database, atau beberapa container sekaligus, RAM dan CPU yang lebih besar akan memberikan performa yang lebih baik.
 
 ---
 
@@ -134,144 +148,174 @@ Docker Desktop pada Windows dapat menggunakan **WSL 2** sebagai backend Linux.
 
 ### Buka PowerShell sebagai Administrator
 
+Klik:
+
+```text
+Start
+  ↓
+PowerShell
+  ↓
+Run as Administrator
+```
+
 Kemudian jalankan:
 
 ```powershell
 wsl --install
 ```
 
-Tunggu sampai proses instalasi selesai.
+Tunggu hingga proses selesai.
 
-Setelah itu:
+Setelah selesai, **restart komputer**.
 
-```text
-Restart komputer
-        ↓
-Windows boot kembali
-        ↓
-WSL 2 siap digunakan
-```
+---
 
-### Cek instalasi WSL
+### Cek WSL
 
-Setelah restart, jalankan:
+Setelah komputer menyala kembali, buka PowerShell:
 
 ```powershell
 wsl --status
 ```
 
-Untuk melihat versi distro:
+Kemudian:
 
 ```powershell
 wsl -l -v
 ```
 
-Pastikan environment menggunakan **WSL 2**.
+Pastikan distro yang digunakan berjalan menggunakan:
+
+```text
+VERSION 2
+```
 
 ---
 
 # 🐳 2. Install Docker Desktop
 
-Download Docker Desktop dari website resmi:
+Download Docker Desktop melalui website resmi:
 
 **Docker Desktop for Windows**
 
 https://www.docker.com/products/docker-desktop/
 
-### Saat instalasi
+Install Docker Desktop seperti biasa.
 
-Pastikan opsi berikut digunakan:
+### Saat proses instalasi
+
+Pastikan opsi:
 
 ```text
 ☑ Use WSL 2 instead of Hyper-V
 ```
 
+dalam kondisi aktif.
+
 Setelah instalasi selesai:
 
 1. Buka **Docker Desktop**
-2. Accept terms jika diminta
-3. Tunggu Docker selesai melakukan startup
+2. Accept Terms jika diminta
+3. Tunggu Docker Engine melakukan startup
 4. Pastikan Docker sudah dalam kondisi **Running**
+
+---
 
 ### Cek Docker
 
 Buka CMD atau PowerShell:
 
-```powershell
+```bash
 docker --version
 ```
 
 Kemudian:
 
-```powershell
+```bash
 docker info
 ```
 
-Jika Docker berjalan normal, informasi Docker akan ditampilkan.
+Jika Docker berjalan normal, informasi mengenai Docker Engine akan ditampilkan.
 
 ---
 
-# ⚙️ 3. Menjalankan n8n
+# 💾 3. Membuat Docker Volume
 
-Setelah Docker Desktop aktif, buka **CMD** atau **PowerShell**.
+Sebelum menjalankan n8n, buat volume untuk menyimpan data.
 
-## Step 1 — Buat Docker Volume
-
-Volume digunakan untuk menyimpan data n8n secara persistent.
+Jalankan:
 
 ```bash
 docker volume create n8n_data
 ```
 
-Jika berhasil, Docker akan mengembalikan nama:
+Jika berhasil, output akan terlihat seperti:
 
 ```text
 n8n_data
 ```
 
----
+Volume ini akan digunakan untuk menyimpan:
 
-## Step 2 — Jalankan Container n8n
-
-Gunakan command berikut:
-
-```bash
-docker run -d \
-  --name n8n \
-  -p 5678:5678 \
-  -v n8n_data:/home/node/.n8n \
-  --restart always \
-  n8nio/n8n
+```text
+Workflow
+Credentials
+Settings
+User Data
+n8n Configuration
 ```
 
-> **Windows CMD:** Jika command multiline di atas tidak bekerja, gunakan versi satu baris di bawah.
+---
+
+# ⚙️ 4. Menjalankan n8n
+
+Setelah Docker Desktop aktif, buka **CMD** atau **PowerShell**.
+
+Jalankan command berikut:
 
 ```bash
 docker run -d --name n8n -p 5678:5678 -v n8n_data:/home/node/.n8n --restart always n8nio/n8n
 ```
 
-### Penjelasan command
+Jika berhasil, Docker akan memberikan Container ID.
 
-| Parameter                     | Fungsi                               |
-| ----------------------------- | ------------------------------------ |
-| `-d`                          | Menjalankan container di background  |
-| `--name n8n`                  | Memberikan nama container            |
-| `-p 5678:5678`                | Membuka port n8n                     |
-| `-v n8n_data:/home/node/.n8n` | Menyimpan data n8n secara persistent |
-| `--restart always`            | Restart container secara otomatis    |
-| `n8nio/n8n`                   | Image resmi n8n                      |
+---
+
+## 🔍 Penjelasan Command
+
+| Parameter                     | Fungsi                                              |
+| ----------------------------- | --------------------------------------------------- |
+| `docker run`                  | Membuat dan menjalankan container                   |
+| `-d`                          | Menjalankan container di background                 |
+| `--name n8n`                  | Memberikan nama container `n8n`                     |
+| `-p 5678:5678`                | Mapping port host ke port n8n                       |
+| `-v n8n_data:/home/node/.n8n` | Menyimpan data secara persistent                    |
+| `--restart always`            | Meminta Docker me-restart container secara otomatis |
+| `n8nio/n8n`                   | Docker image n8n                                    |
 
 ---
 
 # 🌐 Akses Dashboard
 
-Setelah container berjalan, buka browser:
+Setelah container berjalan, buka browser.
+
+Masukkan:
 
 ```text
 http://localhost:5678
 ```
 
-Jika semuanya berhasil, halaman setup n8n akan muncul.
+Atau:
+
+```text
+http://127.0.0.1:5678
+```
+
+Jika berhasil, halaman n8n akan muncul.
+
+Kemudian buat akun lokal sesuai instruksi yang diberikan n8n.
+
+Setelah selesai:
 
 ```text
 Browser
@@ -283,39 +327,44 @@ localhost:5678
 n8n
    │
    ▼
-Create Account
-   │
-   ▼
 Workflow Editor
 ```
 
-Setelah membuat akun lokal, kamu sudah bisa mulai membuat workflow.
+Sekarang n8n siap digunakan.
 
 ---
 
 # 💾 Persistent Storage
 
-Salah satu bagian paling penting dari setup ini adalah:
+Setup ini menggunakan:
 
 ```bash
 -v n8n_data:/home/node/.n8n
 ```
 
-Artinya data n8n disimpan di Docker Volume bernama:
+Artinya data n8n disimpan pada Docker Volume:
 
 ```text
 n8n_data
 ```
 
-Sehingga ketika container dihentikan:
+Sehingga:
 
-```bash
-docker stop n8n
+```text
+Container Stop
+      ↓
+Data Tetap Ada
 ```
 
-data workflow **tidak otomatis hilang**.
+dan:
 
-Bahkan ketika container dihapus:
+```text
+Container Restart
+      ↓
+Data Tetap Ada
+```
+
+Bahkan jika container dihapus:
 
 ```bash
 docker rm n8n
@@ -323,55 +372,208 @@ docker rm n8n
 
 volume `n8n_data` tetap ada selama tidak dihapus secara manual.
 
-### Jangan menjalankan ini sembarangan
+---
+
+## ⚠️ Jangan Hapus Volume Sembarangan
+
+Jangan menjalankan:
 
 ```bash
 docker volume rm n8n_data
 ```
 
-Karena command tersebut dapat menghapus storage yang berisi data n8n.
+kecuali memang ingin menghapus data persistent n8n.
+
+Menghapus volume dapat menyebabkan data yang tersimpan di dalamnya hilang.
 
 ---
 
-# 🔄 Menjalankan Kembali
+# 🔌 Setelah Komputer Dimatikan
 
-Setelah komputer direstart, kamu **tidak perlu membuat container baru**.
+Ini bagian penting.
 
-Pastikan:
+Jika komputer dimatikan atau restart, **kamu tidak perlu menginstall n8n lagi**.
+
+Kamu juga **tidak perlu menjalankan `docker run` lagi**.
+
+Data workflow tetap tersimpan di:
+
+```text
+n8n_data
+```
+
+---
+
+## 1. Nyalakan Komputer
+
+Setelah Windows selesai boot:
 
 ```text
 Windows
    ↓
-Docker Desktop
-   ↓
-n8n Container
-   ↓
-Browser
+Login
 ```
 
-Karena menggunakan:
+---
 
-```bash
---restart always
-```
+## 2. Buka Docker Desktop
 
-Docker akan mencoba menjalankan kembali container n8n ketika Docker Engine aktif.
-
-Kemudian buka:
+Jalankan:
 
 ```text
-http://localhost:5678
+Docker Desktop
 ```
 
-### Jika n8n belum berjalan
+Tunggu sampai Docker Engine aktif.
 
-Cek container:
+Pastikan Docker Desktop sudah dalam kondisi:
+
+```text
+Running
+```
+
+---
+
+## 3. Cek Container n8n
+
+Buka CMD atau PowerShell:
 
 ```bash
 docker ps
 ```
 
-Jika container berhenti, jalankan:
+Jika muncul:
+
+```text
+CONTAINER ID   IMAGE       STATUS        NAMES
+xxxxxxxxxxxx   n8nio/n8n   Up ...        n8n
+```
+
+berarti n8n sudah berjalan.
+
+### Jika sudah `Up`
+
+Tidak perlu menjalankan command tambahan.
+
+Langsung buka:
+
+```text
+http://localhost:5678
+```
+
+---
+
+# 🔧 Jika n8n Tidak Otomatis Berjalan
+
+Jika `docker ps` tidak menampilkan n8n, cek semua container:
+
+```bash
+docker ps -a
+```
+
+Jika muncul:
+
+```text
+n8n    Exited
+```
+
+jalankan:
+
+```bash
+docker start n8n
+```
+
+Kemudian cek:
+
+```bash
+docker ps
+```
+
+Jika sudah:
+
+```text
+n8n    Up ...
+```
+
+buka:
+
+```text
+http://localhost:5678
+```
+
+---
+
+# 🧭 Alur Setelah Restart
+
+```text
+┌──────────────────────┐
+│   Nyalakan Windows   │
+└──────────┬───────────┘
+           ↓
+┌──────────────────────┐
+│   Buka Docker        │
+│      Desktop         │
+└──────────┬───────────┘
+           ↓
+┌──────────────────────┐
+│ Docker Engine        │
+│      Running         │
+└──────────┬───────────┘
+           ↓
+      docker ps
+           │
+      ┌────┴────┐
+      │         │
+      ▼         ▼
+    n8n Up    n8n Exited
+      │         │
+      │         ▼
+      │    docker start n8n
+      │         │
+      └────┬────┘
+           ↓
+┌──────────────────────┐
+│ http://localhost:5678│
+└──────────────────────┘
+```
+
+---
+
+# ❌ Yang Tidak Perlu Dilakukan Setelah Restart
+
+Jangan menjalankan ulang:
+
+```bash
+docker volume create n8n_data
+```
+
+dan jangan menjalankan ulang:
+
+```bash
+docker run -d --name n8n ...
+```
+
+Karena container dan volume sudah dibuat sebelumnya.
+
+Jika menjalankan `docker run` lagi dengan nama container yang sama, kemungkinan muncul error:
+
+```text
+Conflict. The container name "/n8n" is already in use
+```
+
+### Cukup ingat:
+
+```text
+💻 Nyalakan PC
+      ↓
+🐳 Buka Docker Desktop
+      ↓
+🔍 docker ps
+      ↓
+🌐 localhost:5678
+```
+
+Jika belum running:
 
 ```bash
 docker start n8n
@@ -379,27 +581,29 @@ docker start n8n
 
 ---
 
-# 🔧 Perintah Docker Berguna
+# 🔧 Perintah Docker
 
-## Melihat container aktif
+Berikut beberapa command yang berguna untuk mengelola n8n.
+
+### Melihat container aktif
 
 ```bash
 docker ps
 ```
 
-## Melihat semua container
+### Melihat semua container
 
 ```bash
 docker ps -a
 ```
 
-## Melihat log n8n
+### Melihat log n8n
 
 ```bash
 docker logs n8n
 ```
 
-Untuk melihat log secara realtime:
+### Melihat log secara realtime
 
 ```bash
 docker logs -f n8n
@@ -411,7 +615,7 @@ Tekan:
 CTRL + C
 ```
 
-untuk keluar dari tampilan log.
+untuk keluar dari log.
 
 ---
 
@@ -439,83 +643,184 @@ docker restart n8n
 docker rm n8n
 ```
 
-> Menghapus **container** tidak sama dengan menghapus **volume**.
+> Menghapus container **tidak sama** dengan menghapus volume.
 
 ---
 
 # 🌍 Webhook & Akses Internet
 
-Secara default, setup ini hanya dapat diakses dari komputer lokal:
+Secara default, n8n pada setup ini hanya dapat diakses secara lokal melalui:
 
 ```text
 http://localhost:5678
 ```
 
-Artinya layanan eksternal tidak bisa langsung mengakses webhook n8n kamu.
+External service di internet tidak bisa langsung mengakses `localhost`.
 
 Contohnya:
-
-```text
-WhatsApp
-   │
-   │ Webhook
-   ▼
-Internet
-   X
-localhost:5678
-```
-
-Untuk menerima request dari internet, kamu membutuhkan public endpoint.
-
-Contoh arsitektur:
 
 ```text
 External Service
       │
       ▼
- Public URL
+    Internet
       │
-      ▼
- Tunnel / Reverse Proxy
+      X
       │
-      ▼
- localhost:5678
-      │
-      ▼
-     n8n
+localhost:5678
 ```
 
-Untuk development/testing, kamu bisa menggunakan tunneling seperti **ngrok** atau **Cloudflare Tunnel**.
+Hal ini menjadi masalah jika kamu ingin menerima webhook dari:
 
-Untuk production, lebih baik mempertimbangkan **VPS + reverse proxy + HTTPS**.
+* WhatsApp
+* Telegram
+* Google Forms
+* Payment Gateway
+* GitHub
+* API eksternal
+* Service lainnya
+
+---
+
+## 🔗 Solusi untuk Development
+
+Untuk development/testing, kamu dapat menggunakan tunneling seperti:
+
+```text
+Internet
+   │
+   ▼
+Public URL
+   │
+   ▼
+Tunnel
+   │
+   ▼
+localhost:5678
+   │
+   ▼
+n8n
+```
+
+Contoh teknologi yang dapat digunakan:
+
+* ngrok
+* Cloudflare Tunnel
+
+---
+
+## 🏢 Untuk Production
+
+Jika n8n nantinya digunakan sebagai sistem production, lebih baik gunakan:
+
+```text
+Internet
+   │
+   ▼
+Domain
+   │
+   ▼
+HTTPS
+   │
+   ▼
+Reverse Proxy
+   │
+   ▼
+n8n
+   │
+   ▼
+Database / Storage
+```
+
+Untuk penggunaan serius, VPS atau server dedicated biasanya lebih cocok daripada laptop pribadi karena membutuhkan uptime yang lebih stabil.
 
 ---
 
 # 🧪 Troubleshooting
 
-## ❌ `docker` is not recognized
+## ❌ Docker tidak dikenali
 
-Kemungkinan Docker Desktop belum terinstall atau Docker belum berjalan.
+Jika muncul:
 
-Coba:
+```text
+'docker' is not recognized...
+```
+
+pastikan:
+
+1. Docker Desktop sudah terinstall
+2. Docker Desktop sedang berjalan
+3. Terminal sudah dibuka ulang
+
+Kemudian cek:
 
 ```bash
 docker --version
 ```
 
-Kemudian pastikan Docker Desktop sedang aktif.
+---
+
+## ❌ Container n8n tidak berjalan
+
+Cek:
+
+```bash
+docker ps -a
+```
+
+Kemudian:
+
+```bash
+docker logs n8n
+```
+
+Jika diperlukan:
+
+```bash
+docker restart n8n
+```
 
 ---
 
-## ❌ Port 5678 sudah digunakan
+## ❌ localhost:5678 tidak bisa dibuka
 
-Cek container:
+Cek:
 
 ```bash
 docker ps
 ```
 
-Atau gunakan port lain, misalnya:
+Pastikan ada:
+
+```text
+n8n    Up ...
+```
+
+Jika tidak ada:
+
+```bash
+docker start n8n
+```
+
+Kemudian coba:
+
+```text
+http://localhost:5678
+```
+
+atau:
+
+```text
+http://127.0.0.1:5678
+```
+
+---
+
+## ❌ Port 5678 sudah digunakan
+
+Jika port `5678` sudah digunakan aplikasi lain, gunakan port berbeda.
+
+Contoh:
 
 ```bash
 docker run -d --name n8n -p 8080:5678 -v n8n_data:/home/node/.n8n --restart always n8nio/n8n
@@ -529,7 +834,15 @@ http://localhost:8080
 
 ---
 
-## ❌ Container tidak berjalan
+## ❌ Container name sudah digunakan
+
+Jika muncul:
+
+```text
+Conflict. The container name "/n8n" is already in use
+```
+
+Jangan membuat container baru.
 
 Cek:
 
@@ -537,72 +850,61 @@ Cek:
 docker ps -a
 ```
 
-Kemudian lihat log:
+Jika container `n8n` sudah ada, cukup jalankan:
 
 ```bash
-docker logs n8n
-```
-
-Jika perlu restart:
-
-```bash
-docker restart n8n
-```
-
----
-
-## ❌ n8n tidak bisa dibuka
-
-Pastikan:
-
-```bash
-docker ps
-```
-
-menampilkan container `n8n` dalam kondisi running.
-
-Kemudian coba:
-
-```text
-http://127.0.0.1:5678
-```
-
-Jika masih gagal, periksa log:
-
-```bash
-docker logs n8n
+docker start n8n
 ```
 
 ---
 
 # 🔐 Catatan Keamanan
 
-Setup ini ditujukan terutama untuk **local development dan learning environment**.
+Setup ini terutama ditujukan untuk:
 
-Jangan langsung mengekspos:
+* Learning
+* Development
+* Testing
+* Personal Automation
+
+Jangan langsung mengekspos n8n ke internet tanpa konfigurasi keamanan yang tepat.
+
+Jika digunakan untuk production, pertimbangkan:
+
+* HTTPS
+* Strong authentication
+* Secure credentials
+* Environment variables
+* Reverse proxy
+* Firewall
+* Network segmentation
+* Regular backup
+* Regular update
+* Access control
+* Monitoring
+
+### Jangan commit secret ke Git
+
+Jangan menyimpan:
 
 ```text
-localhost:5678
+API Key
+Password
+Token
+Webhook Secret
+Database Credential
+Private Key
 ```
 
-ke internet tanpa konfigurasi keamanan yang tepat.
+langsung di repository.
 
-Jika nantinya n8n digunakan untuk production:
-
-* Gunakan HTTPS
-* Gunakan authentication yang kuat
-* Jangan membocorkan API key
-* Gunakan environment variables untuk secret
-* Gunakan reverse proxy
-* Batasi akses jaringan
-* Lakukan backup workflow dan database
-* Update image n8n secara berkala
+Gunakan environment variables atau credential management yang sesuai.
 
 ---
 
 # 📦 Struktur Environment
 
-Setelah setup selesai, environment kamu kurang lebih seperti ini:
+Setelah instalasi selesai, environment akan terlihat seperti:
 
 ```text
 Windows 10/11
@@ -630,16 +932,76 @@ Windows 10/11
 
 # 🚀 Quick Start
 
-Kalau semua dependency sudah terinstall, cukup jalankan:
+Jika WSL 2 dan Docker Desktop sudah terinstall, cukup jalankan:
+
+### 1. Buat volume
 
 ```bash
 docker volume create n8n_data
 ```
 
-Kemudian:
+### 2. Jalankan n8n
 
 ```bash
 docker run -d --name n8n -p 5678:5678 -v n8n_data:/home/node/.n8n --restart always n8nio/n8n
+```
+
+### 3. Buka browser
+
+```text
+http://localhost:5678
+```
+
+### 4. Setelah komputer restart
+
+Tidak perlu install ulang.
+
+Cukup:
+
+```bash
+docker ps
+```
+
+Jika `n8n` belum berjalan:
+
+```bash
+docker start n8n
+```
+
+Kemudian:
+
+```text
+http://localhost:5678
+```
+
+---
+
+# 📋 Cheat Sheet
+
+| Kebutuhan           | Command              |
+| ------------------- | -------------------- |
+| Cek container aktif | `docker ps`          |
+| Cek semua container | `docker ps -a`       |
+| Start n8n           | `docker start n8n`   |
+| Stop n8n            | `docker stop n8n`    |
+| Restart n8n         | `docker restart n8n` |
+| Lihat log           | `docker logs n8n`    |
+| Live log            | `docker logs -f n8n` |
+| Cek Docker          | `docker info`        |
+| Cek volume          | `docker volume ls`   |
+
+### ⭐ Command yang paling sering dipakai
+
+Setelah komputer restart:
+
+```bash
+docker ps
+```
+
+Kalau belum running:
+
+```bash
+docker start n8n
 ```
 
 Lalu buka:
@@ -648,23 +1010,24 @@ Lalu buka:
 http://localhost:5678
 ```
 
-**Done. n8n sudah berjalan secara lokal di Windows.**
-
 ---
 
-## 📚 Resources
+# 📚 Resources
 
 * **n8n:** https://n8n.io/
 * **n8n Documentation:** https://docs.n8n.io/
 * **Docker Desktop:** https://www.docker.com/products/docker-desktop/
+* **Docker Documentation:** https://docs.docker.com/
 * **WSL Documentation:** https://learn.microsoft.com/windows/wsl/
 
 ---
 
 <p align="center">
 
-### ⚡ Built for Automation & Experimentation
+## ⚡ n8n + Docker + WSL 2
 
-**n8n + Docker + WSL 2**
+**Local Automation Environment**
+
+Built for learning, experimentation, and automation.
 
 </p>
